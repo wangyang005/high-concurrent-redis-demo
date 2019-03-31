@@ -34,4 +34,10 @@ spring:
       poolPreparedStatements: true
       maxOpenPreparedStatements: 20
 
+mybatis:
+  mapper-locations: classpath:mapper/*.xml  #注意：一定要对应mapper映射xml文件的所在路径
 
+#配置mybatis打印sql,只能是全路径
+logging:
+  level:
+    com.high.concurrent.redis.demo.highconcurrentredis.mapper: DEBUG

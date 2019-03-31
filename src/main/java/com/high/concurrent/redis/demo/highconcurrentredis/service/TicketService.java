@@ -1,12 +1,17 @@
 package com.high.concurrent.redis.demo.highconcurrentredis.service;
 
+import com.high.concurrent.redis.demo.highconcurrentredis.annotation.Cache;
 import com.high.concurrent.redis.demo.highconcurrentredis.dao.TicketDao;
+import com.high.concurrent.redis.demo.highconcurrentredis.entity.Ticket;
+import com.high.concurrent.redis.demo.highconcurrentredis.entity.TicketExample;
+import com.high.concurrent.redis.demo.highconcurrentredis.mapper.TicketMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import javax.annotation.Resource;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -23,6 +28,8 @@ public class TicketService {
     private StringRedisTemplate stringRedisTemplate;
     @Autowired
     private TicketDao ticketDao;
+    @Resource
+    private TicketMapper ticketMapper;
 
     /** 用一个并发安全的map集合模拟不同票的锁*/
     private Map<String,Object> lock = new ConcurrentHashMap<>();
@@ -92,5 +99,17 @@ public class TicketService {
         }
         log.info("线程："+Thread.currentThread().getName()+" 从数据库中获取余票<<<<<<<<<<<<<<<<"+ticketNum);
         return ticketNum;
+    }
+
+
+    /**
+     * 使用自定义缓存注解实现：先从redis缓存中获取票信息，缓存中没有，则从数据库获取的策略
+     * @param ticketName 票名
+     */
+    @Cache(key = "'ticket_' + #ticketName") //这里使用SpringEL表达式：#ticketName当做占位符
+    public Ticket findTicketByCache(String ticketName) {
+        TicketExample ticketExample = new TicketExample();
+        ticketExample.createCriteria().andNameEqualTo(ticketName);
+        return ticketMapper.selectByExample(ticketExample).get(0);
     }
 }
